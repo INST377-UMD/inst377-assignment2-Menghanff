@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dog Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        /* Navigation Bar */
+        nav {
+            background-color: rgb(27, 109, 251); /* Red navigation bar */
+            width: 100%;
+        }
+
+        nav ul {
+            display: flex;
+            justify-content: center;
+            list-style: none;
+            padding: 0.5rem 0;
+        }
+
+        nav li {
+            margin: 0 1rem;
+        }
+
+        nav a {
+            color: #f9e4c5;
+            text-decoration: none;
+            font-weight: bold;
+            padding: 0.5rem;
+            transition: color 0.3s ease;
+        }
+
+        nav a:hover {
+            color: #fff;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .carousel-container {
+            margin: 0 auto 40px;
+            max-width: 600px;
+            height: 400px;
+            overflow: hidden;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .carousel-slide {
+            width: 100%;
+            height: 400px;
+            object-fit: cover;
+            display: block;
+        }
+        .breed-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+        .breed-button {
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+        .breed-button:hover {
+            background-color: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .breed-info-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: none;
+        }
+        .breed-name {
+            color: #333;
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        .breed-description {
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+        .breed-life {
+            display: flex;
+            gap: 20px;
+            margin-top: 10px;
+        }
+        .life-span {
+            padding: 8px 15px;
+            background-color: #e9f7ef;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .audio-controls {
+            text-align: center;
+            margin-top: 30px;
+        }
+        #audioCommandBtn {
+            padding: 10px 20px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #audioCommandBtn:hover {
+            background-color: #2980b9;
+        }
+        .loading {
+            text-align: center;
+            font-style: italic;
+            color: #666;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/simple-slider/1.0.1/simpleslider.min.js"></script>
+</head>
+<body>
+  <nav>
+    <ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="stocks.html">Stocks</a></li>
+        <li><a href="dogs.html">Dogs</a></li>
+    </ul>
+  </nav>
+    <h1>Discover Dogs</h1>
+    
+    <div class="carousel-container" id="dogCarousel">
+        <p class="loading">Loading dog images...</p>
+    </div>
+    
+    <div class="breed-buttons" id="breedButtons">
+        <p class="loading">Loading dog breeds...</p>
+    </div>
+    
+    <div class="breed-info-container" id="breedInfo">
+        <h2 class="breed-name" id="breedName"></h2>
+        <p class="breed-description" id="breedDescription"></p>
+        <div class="breed-life">
+            <div class="life-span">Min Life: <span id="minLife"></span> years</div>
+            <div class="life-span">Max Life: <span id="maxLife"></span> years</div>
+        </div>
+    </div>
+    
+    <div class="audio-controls">
+        <button id="audioCommandBtn">Enable Voice Commands</button>
+        <p>Say "Load Dog Breed [Breed Name]" to see breed information</p>
+    </div>
+
+    <script>
+        // Global variables
+        let allBreeds = [];
+        let isListening = false;
+        let recognition = null;
+        
+        // Function to load random dog images and create carousel
+        async function loadDogImages() {
+            const carouselContainer = document.getElementById('dogCarousel');
+            carouselContainer.innerHTML = '<p class="loading">Loading dog images...</p>';
+            
+            try {
+                // Create array to hold the images
+                const carouselImages = [];
+                
+                // Load 10 random dog images
+                for (let i = 0; i < 10; i++) {
+                    const response = await fetch('https://dog.ceo/api/breeds/image/random');
+                    const data = await response.json();
+                    
+                    if (data.status === 'success') {
+                        const img = document.createElement('img');
+                        img.src = data.message;
+                        img.alt = 'Random dog';
+                        img.className = 'carousel-slide';
+                        carouselImages.push(img);
+                    }
+                }
+                
+                // Clear the loading message and append images
+                carouselContainer.innerHTML = '';
+                carouselImages.forEach(img => carouselContainer.appendChild(img));
+                
+                // Initialize the carousel
+                simpleslider.getSlider({
+                    container: carouselContainer,
+                    transitionTime: 1,
+                    delay: 3.5
+                });
+            } catch (error) {
+                console.error('Error loading dog images:', error);
+                carouselContainer.innerHTML = '<p>Failed to load dog images. Please refresh the page.</p>';
+            }
+        }
+        
+        // Function to load dog breeds and create buttons
+        async function loadDogBreeds() {
+            const breedButtonsContainer = document.getElementById('breedButtons');
+            breedButtonsContainer.innerHTML = '<p class="loading">Loading dog breeds...</p>';
+            
+            try {
+                const response = await fetch('https://dogapi.dog/api/v2/breeds');
+                const data = await response.json();
+                
+                if (data && data.data) {
+                    allBreeds = data.data;
+                    
+                    // Clear the loading message
+                    breedButtonsContainer.innerHTML = '';
+                    
+                    // Create a button for each breed
+                    allBreeds.forEach(breed => {
+                        const button = document.createElement('button');
+                        button.textContent = breed.attributes.name;
+                        button.className = 'breed-button';
+                        button.setAttribute('data-breed-id', breed.id);
+                        button.addEventListener('click', () => showBreedInfo(breed.id));
+                        breedButtonsContainer.appendChild(button);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading dog breeds:', error);
+                breedButtonsContainer.innerHTML = '<p>Failed to load dog breeds. Please refresh the page.</p>';
+            }
+        }
+        
+        // Function to show breed information
+        function showBreedInfo(breedId) {
+            const breedInfoContainer = document.getElementById('breedInfo');
+            const breed = allBreeds.find(b => b.id === breedId);
+            
+            if (breed) {
+                const attributes = breed.attributes;
+                
+                document.getElementById('breedName').textContent = attributes.name;
+                document.getElementById('breedDescription').textContent = attributes.description || 'No description available.';
+                document.getElementById('minLife').textContent = attributes.life.min || 'Unknown';
+                document.getElementById('maxLife').textContent = attributes.life.max || 'Unknown';
+                
+                breedInfoContainer.style.display = 'block';
+                
+                // Scroll to breed info
+                breedInfoContainer.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+        
+        // Function to handle voice commands
+        function setupVoiceRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            
+            if (SpeechRecognition) {
+                recognition = new SpeechRecognition();
+                recognition.continuous = true;
+                recognition.interimResults = false;
+                
+                recognition.onresult = function(event) {
+                    const transcript = event.results[event.results.length - 1][0].transcript.trim().toLowerCase();
+                    console.log('Voice command:', transcript);
+                    
+                    // Check if command matches "Load Dog Breed [BreedName]"
+                    if (transcript.startsWith('load dog breed')) {
+                        const requestedBreed = transcript.substring('load dog breed'.length).trim();
+                        
+                        // Find the closest matching breed name
+                        const foundBreed = allBreeds.find(breed => 
+                            breed.attributes.name.toLowerCase() === requestedBreed ||
+                            breed.attributes.name.toLowerCase().includes(requestedBreed)
+                        );
+                        
+                        if (foundBreed) {
+                            showBreedInfo(foundBreed.id);
+                        } else {
+                            alert(`Breed "${requestedBreed}" not found.`);
+                        }
+                    }
+                };
+                
+                recognition.onerror = function(event) {
+                    console.error('Speech recognition error:', event.error);
+                    isListening = false;
+                    document.getElementById('audioCommandBtn').textContent = 'Enable Voice Commands';
+                };
+            } else {
+                alert('Speech recognition is not supported in your browser.');
+                document.getElementById('audioCommandBtn').style.display = 'none';
+            }
+        }
+        
+        // Toggle voice recognition
+        function toggleVoiceRecognition() {
+            if (!recognition) {
+                setupVoiceRecognition();
+            }
+            
+            if (isListening) {
+                recognition.stop();
+                isListening = false;
+                document.getElementById('audioCommandBtn').textContent = 'Enable Voice Commands';
+            } else {
+                recognition.start();
+                isListening = true;
+                document.getElementById('audioCommandBtn').textContent = 'Voice Commands Enabled (Click to Disable)';
+            }
+        }
+        
+        // Event listener for voice command button
+        document.getElementById('audioCommandBtn').addEventListener('click', toggleVoiceRecognition);
+        
+        // Initialize the page
+        window.addEventListener('DOMContentLoaded', () => {
+            loadDogImages();
+            loadDogBreeds();
+        });
+    </script>
+</body>
+</html>
